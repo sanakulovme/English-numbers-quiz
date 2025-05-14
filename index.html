@@ -177,6 +177,7 @@
                     feedbackEl.textContent = `Incorrect. The correct answer is "${correctAnswer}".`;
                     feedbackEl.classList.remove('text-green-500');
                     feedbackEl.classList.add('text-red-500');
+                    setTimeout(generateQuestion, 1000);
                 }
             } else {
                 const userNumber = parseInt(userAnswer);
@@ -192,6 +193,7 @@
                     feedbackEl.textContent = `Incorrect. The correct answer is ${correctAnswer}.`;
                     feedbackEl.classList.remove('text-green-500');
                     feedbackEl.classList.add('text-red-500');
+                    setTimeout(generateQuestion, 1000);
                 }
             }
         });
