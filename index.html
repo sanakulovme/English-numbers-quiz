@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number-Words Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex ">
+    <!-- Mobile Toggle Button -->
+    <button id="toggleSidebar" class="lg:hidden fixed top-4 left-4 z-50 bg-blue-500 text-white p-2 rounded-md">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white p-4 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 lg:static lg:w-64 lg:h-screen overflow-y-auto">
+        <h2 class="text-lg font-bold mb-4">History</h2>
+        <ul id="historyList" class="space-y-2"></ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex items-center justify-center lg:justify-start p-4 lg:ml-64">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h1 class="text-2xl font-bold text-center mb-4">Number-Words Quiz</h1>
+
+            <!-- Settings -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Number Range</label>
+                <div class="flex space-x-2">
+                    <input id="minRange" type="number" value="1" min="1" class="w-1/2 p-2 border rounded" />
+                    <input id="maxRange" type="number" value="100" min="1" class="w-1/2 p-2 border rounded" />
+                </div>
+                <button id="startQuiz" class="mt-2 w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Start Quiz</button>
+            </div>
+
+            <!-- Quiz Section -->
+            <div id="quizSection" class="hidden">
+                <div class="flex justify-between mb-4">
+                    <button id="numberToWordsBtn" class="w-1/2 bg-gray-200 p-2 rounded-l hover:bg-gray-300">Number to Words</button>
+                    <button id="wordsToNumberBtn" class="w-1/2 bg-gray-200 p-2 rounded-r hover:bg-gray-300">Words to Number</button>
+                </div>
+                <p id="question" class="text-lg font-semibold text-center mb-4"></p>
+                <input id="answer" type="text" class="w-full p-2 border rounded mb-4" placeholder="Enter your answer" />
+                <button id="submitAnswer" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Submit</button>
+                <p id="feedback" class="mt-4 text-center hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Number to words conversion
+        const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+                      'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+        const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+        function numberToWords(num) {
+            if (num === 0) return 'zero';
+            if (num < 20) return ones[num];
+            if (num < 100) {
+                const ten = Math.floor(num / 10);
+                const one = num % 10;
+                return one ? `${tens[ten]}-${ones[one]}` : tens[ten];
+            }
+            return `${ones[Math.floor(num / 100)]} hundred`;
+        }
+
+        // Words to number conversion
+        function wordsToNumber(words) {
+            words = words.toLowerCase().replace(/ and /g, ' ').replace(/-/g, ' ').trim();
+            const wordArray = words.split(' ');
+
+            let result = 0;
+            for (let word of wordArray) {
+                if (ones.includes(word)) {
+                    result += ones.indexOf(word);
+                } else if (tens.includes(word)) {
+                    result += tens.indexOf(word) * 10;
+                } else if (word === 'hundred') {
+                    result *= 100;
+                }
+            }
+            return result;
+        }
+
+        // Quiz logic
+        let mode = 'numberToWords';
+        let currentNumber, correctAnswer;
+
+        function generateQuestion() {
+            const min = parseInt(document.getElementById('minRange').value);
+            const max = parseInt(document.getElementById('maxRange').value);
+            currentNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+
+            const questionEl = document.getElementById('question');
+            const answerEl = document.getElementById('answer');
+            answerEl.value = '';
+            document.getElementById('feedback').classList.add('hidden');
+
+            if (mode === 'numberToWords') {
+                questionEl.textContent = `Write ${currentNumber} in words`;
+                correctAnswer = numberToWords(currentNumber);
+            } else {
+                const words = numberToWords(currentNumber);
+                questionEl.textContent = `Write "${words}" as a number`;
+                correctAnswer = currentNumber;
+            }
+        }
+
+        // History management
+        function addToHistory(question, userAnswer, isCorrect, correctAnswer) {
+            const historyList = document.getElementById('historyList');
+            const li = document.createElement('li');
+            li.className = 'p-2 rounded ' + (isCorrect ? 'bg-green-600' : 'bg-red-600');
+
+            if (isCorrect) {
+                li.textContent = `${question}: ${userAnswer}`;
+            } else {
+                li.innerHTML = `${question}: <span class="line-through">${userAnswer}</span> (Correct: ${correctAnswer})`;
+            }
+
+            historyList.prepend(li);
+        }
+
+        // Sidebar toggle
+        const sidebar = document.getElementById('sidebar');
+        const toggleButton = document.getElementById('toggleSidebar');
+
+        toggleButton.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth < 1024 && !sidebar.contains(e.target) && !toggleButton.contains(e.target) && !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+            }
+        });
+
+        // Event listeners
+        document.getElementById('startQuiz').addEventListener('click', () => {
+            document.getElementById('quizSection').classList.remove('hidden');
+            generateQuestion();
+        });
+
+        document.getElementById('numberToWordsBtn').addEventListener('click', () => {
+            mode = 'numberToWords';
+            document.getElementById('numberToWordsBtn').classList.add('bg-blue-500', 'text-white');
+            document.getElementById('wordsToNumberBtn').classList.remove('bg-blue-500', 'text-white');
+            generateQuestion();
+        });
+
+        document.getElementById('wordsToNumberBtn').addEventListener('click', () => {
+            mode = 'wordsToNumber';
+            document.getElementById('wordsToNumberBtn').classList.add('bg-blue-500', 'text-white');
+            document.getElementById('numberToWordsBtn').classList.remove('bg-blue-500', 'text-white');
+            generateQuestion();
+        });
+
+        document.getElementById('submitAnswer').addEventListener('click', () => {
+            const userAnswer = document.getElementById('answer').value.trim();
+            const feedbackEl = document.getElementById('feedback');
+            feedbackEl.classList.remove('hidden');
+            const questionText = document.getElementById('question').textContent;
+
+            if (mode === 'numberToWords') {
+                const isCorrect = userAnswer.toLowerCase() === correctAnswer;
+                addToHistory(questionText, userAnswer, isCorrect, correctAnswer);
+
+                if (isCorrect) {
+                    feedbackEl.textContent = 'Correct!';
+                    feedbackEl.classList.remove('text-red-500');
+                    feedbackEl.classList.add('text-green-500');
+                    setTimeout(generateQuestion, 1000);
+                } else {
+                    feedbackEl.textContent = `Incorrect. The correct answer is "${correctAnswer}".`;
+                    feedbackEl.classList.remove('text-green-500');
+                    feedbackEl.classList.add('text-red-500');
+                }
+            } else {
+                const userNumber = parseInt(userAnswer);
+                const isCorrect = userNumber === correctAnswer;
+                addToHistory(questionText, userAnswer, isCorrect, correctAnswer);
+
+                if (isCorrect) {
+                    feedbackEl.textContent = 'Correct!';
+                    feedbackEl.classList.remove('text-red-500');
+                    feedbackEl.classList.add('text-green-500');
+                    setTimeout(generateQuestion, 1000);
+                } else {
+                    feedbackEl.textContent = `Incorrect. The correct answer is ${correctAnswer}.`;
+                    feedbackEl.classList.remove('text-green-500');
+                    feedbackEl.classList.add('text-red-500');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
